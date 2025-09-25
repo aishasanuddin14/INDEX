@@ -133,7 +133,15 @@
     // Kamu boleh pakai variasi nama kolom berikut. Script akan memetakan otomatis.
     const HEADER_MAP = {
       "No":["No","Nomor","ID"],
-      "Nama Ormas/Lembaga":["Nama Ormas/Lembaga","Nama Ormas","Nama Lembaga","Nama"],
+      "Nama Ormas/Lembaga": [
+  "Nama Ormas/Lembaga",
+  "Nama Ormas",
+  "Nama Lembaga",
+  "Nama",
+  "Organisasi",
+  "Nama Organisasi"
+],
+
       "Ketua/PJ":["Ketua/PJ","Ketua","Penanggung Jawab","PJ"],
       "Kontak":["Kontak","HP","No HP","Telepon","Telp","Phone"],
       "Status":["Status","Status Aktif"],
@@ -347,6 +355,69 @@
         document.getElementById('tip').innerHTML = "Gagal memuat Excel. Pastikan file ada di <code>"+EXCEL_PATH+"</code> di repo ini.";
       }
     })();
+    let DT = null; // pastikan global
+
+function renderTable(rows){
+  // rebuild header DOM biar sinkron
+  const head = document.getElementById("tblHead");
+  head.innerHTML = "";
+  EXPECTED_COLS.forEach(c=>{
+    const th = document.createElement("th");
+    th.textContent = c;
+    head.appendChild(th);
+  });
+
+  // siapkan data berurutan + fallback
+  const data = rows.map((r, idx) => {
+    const row = EXPECTED_COLS.map(c => {
+      let val = r[c];
+      if (val === undefined || val === null || String(val).trim() === "") return "-";
+      return val;
+    });
+    // kolom "No" auto diisi jika kosong
+    const noIdx = EXPECTED_COLS.indexOf("No");
+    if (noIdx >= 0 && (row[noIdx] === "-" || row[noIdx] === "")) {
+      row[noIdx] = idx + 1;
+    }
+    return row;
+  });
+
+  // definisi kolom eksplisit agar DataTables tidak sok tau
+  const columns = EXPECTED_COLS.map(c => ({ title: c }));
+
+  if (!DT) {
+    DT = $('#ormasTable').DataTable({
+      data,
+      columns,
+      pageLength: 25,
+      order: [[0, 'asc']],
+      responsive: true,
+      autoWidth: false,
+      columnDefs: [
+        { responsivePriority: 1, targets: [EXPECTED_COLS.indexOf("Nama Ormas/Lembaga")] },
+        { responsivePriority: 2, targets: [EXPECTED_COLS.indexOf("Status")] },
+        { responsivePriority: 3, targets: [EXPECTED_COLS.indexOf("Kantor/Sekretariat")] },
+        { responsivePriority: 10001, targets: [
+            EXPECTED_COLS.indexOf("Latitude"),
+            EXPECTED_COLS.indexOf("Longitude")
+          ].filter(i => i >= 0)
+        }
+      ],
+      language: {
+        search: "Cari:",
+        lengthMenu: "Tampilkan _MENU_ entri",
+        zeroRecords: "Tidak ada data",
+        info: "Menampilkan _START_–_END_ dari _TOTAL_",
+        infoEmpty: "Tidak ada data",
+        infoFiltered: "(disaring dari _MAX_ total data)"
+      }
+    });
+  } else {
+    DT.clear().rows.add(data).draw();
+    DT.columns.adjust().responsive.recalc();
+  }
+}
+
   </script>
   
 </body>
