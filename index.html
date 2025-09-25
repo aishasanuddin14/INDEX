@@ -205,5 +205,38 @@
 })(ROWS);
 
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+async function loadData() {
+  const response = await fetch('data/ormas.xlsx');
+  const arrayBuffer = await response.arrayBuffer();
+  const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+  const sheetName = workbook.SheetNames[0];
+  const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+  
+  // render ke tabel
+  let tbody = document.querySelector("#tabel-ormas tbody");
+  data.forEach(row => {
+    let tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.Nama || ''}</td>
+      <td>${row.Desa || ''}</td>
+      <td>${row.Ketua || ''}</td>
+      <td>${row.Latitude || ''}</td>
+      <td>${row.Longitude || ''}</td>
+    `;
+    tbody.appendChild(tr);
+
+    // render marker ke peta
+    if (row.Latitude && row.Longitude) {
+      L.marker([row.Latitude, row.Longitude])
+        .addTo(map)
+        .bindPopup(`<b>${row.Nama}</b><br>${row.Desa}`);
+    }
+  });
+}
+loadData();
+</script>
+
 </body>
 </html>
