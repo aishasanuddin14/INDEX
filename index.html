@@ -417,6 +417,53 @@ function renderTable(rows){
     DT.columns.adjust().responsive.recalc();
   }
 }
+function renderTable(rows, filterType="all"){
+  let filtered = rows;
+
+  if(filterType==="aktif"){
+    filtered = rows.filter(r=>isActive(r["Status"]));
+  }else if(filterType==="non"){
+    filtered = rows.filter(r=>(r["Status"]||"").toLowerCase().includes("tidak"));
+  }else if(filterType==="skt"){
+    filtered = rows.filter(r=>{
+      const p=(r["Status Pendaftaran"]||"").toLowerCase();
+      return p.includes("skt")||p.includes("kemenkumham")||p.includes("terdaftar");
+    });
+  }else if(filterType==="nas"){
+    filtered = rows.filter(r=>(r["Lingkup"]||"").toLowerCase().includes("nasional"));
+  }else if(filterType==="lok"){
+    filtered = rows.filter(r=>{
+      const l=(r["Lingkup"]||"").toLowerCase();
+      return l.includes("lokal")||l.includes("daerah");
+    });
+  }
+
+  // isi tabel
+  const head = document.getElementById("tblHead");
+  head.innerHTML = "";
+  EXPECTED_COLS.forEach(c=>{
+    const th=document.createElement("th");
+    th.textContent=c;
+    head.appendChild(th);
+  });
+
+  const data = filtered.map((r,i)=>EXPECTED_COLS.map(c=>r[c]||"-"));
+
+  $('#ormasTable').DataTable({
+    destroy:true,
+    data,
+    columns: EXPECTED_COLS.map(c=>({title:c})),
+    pageLength:25,
+    responsive:true
+  });
+}
+document.querySelector('[id="bAktif"]').parentElement.onclick = ()=>renderTable(rows,"aktif");
+document.querySelector('[id="bNon"]').parentElement.onclick = ()=>renderTable(rows,"non");
+document.querySelector('[id="bSKT"]').parentElement.onclick = ()=>renderTable(rows,"skt");
+document.querySelector('[id="bNas"]').parentElement.onclick = ()=>renderTable(rows,"nas");
+document.querySelector('[id="bLok"]').parentElement.onclick = ()=>renderTable(rows,"lok");
+document.querySelector('[id="bTotal"]').parentElement.onclick = ()=>renderTable(rows,"all");
+
 
   </script>
   
