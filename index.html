@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Laporan Ormas Halteng – Live dari Excel (Badge Filter)</title>
+  <title>Laporan Ormas Halteng – Live dari Excel</title>
 
   <!-- UI & Tabel -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -16,6 +16,7 @@
     body{background:#f7f7fb}
     .mini{font-size:.9rem;color:#6b7280}
     .card-stat{border:0;border-radius:1rem}
+    .card-stat .display-6{font-weight:700}
     #map{height:520px;border-radius:1rem}
     .badge-pin{background:#2563eb;color:#fff;border-radius:999px;padding:.35rem .6rem;border:2px solid #1e40af;box-shadow:0 2px 6px rgba(0,0,0,.2);font-weight:700;font-size:.9rem;line-height:1;text-align:center}
     .badge-pin.red{background:#dc2626;border-color:#991b1b}
@@ -25,9 +26,6 @@
     .legend .dot.green{background:#16a34a}
     .legend .dot.red{background:#dc2626}
     .legend .dot.blue{background:#2563eb}
-    /* badge filter look */
-    .filter-badge{display:inline-block;cursor:pointer; user-select:none}
-    .filter-badge.active{outline:2px solid #111; box-shadow:0 0 0 2px rgba(0,0,0,.08) inset}
   </style>
 </head>
 <body>
@@ -37,39 +35,15 @@
       <p class="text-muted">Data dibaca langsung dari <code>data/master_ormas.xlsx</code>. Ganti Excel, commit, refresh halaman, selesai.</p>
     </header>
 
-    <!-- BADGES (klik untuk filter tabel) -->
+    <!-- BADGES -->
     <section class="mb-4">
       <div class="row g-3 text-center">
-        <div class="col-6 col-md-2">
-          <span class="badge bg-primary p-3 w-100 filter-badge active" data-mode="all" title="Tampilkan semua">
-            Total Ormas<br><span id="bTotal" class="fs-5">0</span>
-          </span>
-        </div>
-        <div class="col-6 col-md-2">
-          <span class="badge bg-success p-3 w-100 filter-badge" data-mode="aktif" title="Hanya yang aktif">
-            Aktif<br><span id="bAktif" class="fs-5">0</span>
-          </span>
-        </div>
-        <div class="col-6 col-md-2">
-          <span class="badge bg-danger p-3 w-100 filter-badge" data-mode="nonaktif" title="Hanya yang tidak aktif">
-            Tidak Aktif<br><span id="bNon" class="fs-5">0</span>
-          </span>
-        </div>
-        <div class="col-6 col-md-2">
-          <span class="badge bg-warning text-dark p-3 w-100 filter-badge" data-mode="skt" title="Punya SKT/Kemenkumham/Terdaftar">
-            SKT/Kemenkumham<br><span id="bSKT" class="fs-5">0</span>
-          </span>
-        </div>
-        <div class="col-6 col-md-2">
-          <span class="badge bg-info text-dark p-3 w-100 filter-badge" data-mode="nasional" title="Lingkup Nasional">
-            Nasional<br><span id="bNas" class="fs-5">0</span>
-          </span>
-        </div>
-        <div class="col-6 col-md-2">
-          <span class="badge bg-secondary p-3 w-100 filter-badge" data-mode="lokal" title="Lingkup Lokal/Daerah">
-            Lokal/Daerah<br><span id="bLok" class="fs-5">0</span>
-          </span>
-        </div>
+        <div class="col-6 col-md-2"><span class="badge bg-primary p-3 w-100">Total Ormas<br><span id="bTotal" class="fs-5">0</span></span></div>
+        <div class="col-6 col-md-2"><span class="badge bg-success p-3 w-100">Aktif<br><span id="bAktif" class="fs-5">0</span></span></div>
+        <div class="col-6 col-md-2"><span class="badge bg-danger p-3 w-100">Tidak Aktif<br><span id="bNon" class="fs-5">0</span></span></div>
+        <div class="col-6 col-md-2"><span class="badge bg-warning text-dark p-3 w-100">SKT/Kemenkumham<br><span id="bSKT" class="fs-5">0</span></span></div>
+        <div class="col-6 col-md-2"><span class="badge bg-info text-dark p-3 w-100">Nasional<br><span id="bNas" class="fs-5">0</span></span></div>
+        <div class="col-6 col-md-2"><span class="badge bg-secondary p-3 w-100">Lokal/Daerah<br><span id="bLok" class="fs-5">0</span></span></div>
       </div>
     </section>
 
@@ -93,7 +67,7 @@
     </section>
 
     <!-- TABLE -->
-    <section class="mb-4" id="tableSection">
+    <section class="mb-4">
       <div class="card shadow-sm p-3">
         <div class="table-responsive">
           <table id="ormasTable" class="table table-striped table-bordered w-100">
@@ -120,6 +94,7 @@
     const EXCEL_PATH = "data/master_ormas.xlsx"; // ganti hanya jika nama file/letak berbeda
 
     // ===== HEADER YANG DIDUKUNG =====
+    // Kamu boleh pakai variasi nama kolom berikut. Script akan memetakan otomatis.
     const HEADER_MAP = {
       "No":["No","Nomor","ID"],
       "Nama Ormas/Lembaga":["Nama Ormas/Lembaga","Nama Ormas","Nama Lembaga","Nama"],
@@ -151,6 +126,7 @@
       return s.includes("aktif") && !s.includes("tidak");
     };
 
+    // Peta Excel -> header standar
     function normalizeRow(rowRaw){
       const row = {};
       for(const std of EXPECTED_COLS){
@@ -165,11 +141,13 @@
       return row;
     }
 
+    // Group per lokasi
     function groupByLocation(rows){
       const groups = {};
       rows.forEach(r=>{
         let lat = toNum(r["Latitude"]);
         let lng = toNum(r["Longitude"]);
+        // auto swap jika kebalik
         if(!isNaN(lat) && !isNaN(lng) && Math.abs(lat)>20 && Math.abs(lng)<5){ const t=lat; lat=lng; lng=t; }
         if(isNaN(lat) || isNaN(lng)) return;
         const key = lat.toFixed(5)+","+lng.toFixed(5);
@@ -179,8 +157,9 @@
       return groups;
     }
 
+    // ===== LOAD EXCEL =====
     async function loadExcel(){
-      const url = EXCEL_PATH + "?v=" + Date.now();
+      const url = EXCEL_PATH + "?v=" + Date.now(); // cache-buster
       const resp = await fetch(url);
       if(!resp.ok) throw new Error("Gagal mengambil Excel: "+resp.status);
       const buf = await resp.arrayBuffer();
@@ -191,7 +170,7 @@
       return rows;
     }
 
-    // ===== RENDER BADGES =====
+    // ===== RENDER =====
     function renderBadges(rows){
       const total = rows.length;
       const aktif = rows.filter(r=>isActive(r["Status"])).length;
@@ -213,7 +192,6 @@
       document.getElementById("bLok").innerText=lok;
     }
 
-    // ===== RENDER MAP =====
     function renderMap(rows){
       const groups = groupByLocation(rows);
       const keys = Object.keys(groups);
@@ -238,72 +216,25 @@
       if(bounds.length) map.fitBounds(L.latLngBounds(bounds),{padding:[20,20]});
     }
 
-    // ===== TABEL (DataTables) =====
-    let DT = null, ALL_ROWS = [];
     function renderTable(rows){
       // header
       const head = document.getElementById("tblHead"); head.innerHTML="";
       EXPECTED_COLS.forEach(c=>{ const th=document.createElement("th"); th.textContent=c; head.appendChild(th); });
-
+      // data
       const data = rows.map(r=>EXPECTED_COLS.map(c=>r[c]||""));
-      if(DT){ DT.clear().rows.add(data).draw(); return; }
-      DT = $('#ormasTable').DataTable({data,pageLength:25,order:[[0,'asc']]});
-    }
-
-    // ===== FILTERING BERDASAR BADGE =====
-    function filterRows(mode){
-      if(!ALL_ROWS || !ALL_ROWS.length) return [];
-
-      const rows = ALL_ROWS;
-      switch(mode){
-        case "aktif":
-          return rows.filter(r=>isActive(r["Status"]));
-        case "nonaktif":
-          return rows.filter(r=>(r["Status"]||"").toLowerCase().includes("tidak"));
-        case "skt":
-          return rows.filter(r=>{
-            const p=(r["Status Pendaftaran"]||"").toLowerCase();
-            return p.includes("skt")||p.includes("kemenkumham")||p.includes("terdaftar");
-          });
-        case "nasional":
-          return rows.filter(r=>(r["Lingkup"]||"").toLowerCase().includes("nasional"));
-        case "lokal":
-          return rows.filter(r=>{
-            const l=(r["Lingkup"]||"").toLowerCase();
-            return l.includes("lokal")||l.includes("daerah");
-          });
-        default: // "all"
-          return rows;
-      }
-    }
-
-    function setActiveBadge(mode){
-      document.querySelectorAll('.filter-badge').forEach(b=>{
-        b.classList.toggle('active', b.dataset.mode===mode);
-      });
-    }
-
-    function attachBadgeHandlers(){
-      document.querySelectorAll('.filter-badge').forEach(b=>{
-        b.addEventListener('click', ()=>{
-          const mode = b.dataset.mode || "all";
-          setActiveBadge(mode);
-          const subset = filterRows(mode);
-          renderTable(subset);
-          document.getElementById("tableSection").scrollIntoView({behavior:"smooth", block:"start"});
-        });
-      });
+      $('#ormasTable').DataTable({destroy:true,data,pageLength:25,order:[[0,'asc']]});
+      // isi manual karena DataTables di-init setelah, kita pakai API
+      const dt = $('#ormasTable').DataTable();
+      dt.clear(); dt.rows.add(data); dt.draw();
     }
 
     // ===== BOOT =====
     (async function(){
       try{
         const rows = await loadExcel();
-        ALL_ROWS = rows.slice();
         renderBadges(rows);
         renderMap(rows);
-        renderTable(rows);       // default: semua
-        attachBadgeHandlers();   // aktifkan klik badge
+        renderTable(rows);
       }catch(e){
         console.error(e);
         document.getElementById('tip').classList.remove('d-none');
